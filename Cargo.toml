@@ -1,7 +1,15 @@
 [package]
-name = "fast-table-widget"
-version = "0.1.0"
+name = "tabular"
+version = "0.2.0"
 edition = "2024"
 
+[features]
+serde = ["dep:serde"]
+
 [dependencies]
-iced = { git = "https://github.com/airstrike/iced.git", branch = "latest", version = "0.14.0-dev", features = ["lazy", "advanced", "debug"] }
+iced = { git = "https://github.com/iced-rs/iced.git", branch = "master", features = [
+    "lazy",
+    "advanced",
+    "debug",
+] }
+serde = { version = "1.0", optional = true, features = ["derive"] }
