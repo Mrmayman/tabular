@@ -1,6 +1,6 @@
 <div align="center">
 
-# iced_tabular
+# tabular
 
 [![Made with iced](https://iced.rs/badge.svg)](https://github.com/iced-rs/iced)
 
