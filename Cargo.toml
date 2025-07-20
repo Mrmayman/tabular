@@ -4,8 +4,15 @@ version = "0.2.0"
 edition = "2024"
 
 [features]
+default = ["tiny_skia", "wgpu"]
 serde = ["dep:serde"]
+tiny_skia = ["iced/tiny-skia"]
+wgpu = ["iced/wgpu"]
 
 [dependencies]
-iced = { version = "0.13", features = ["lazy", "advanced", "debug"] }
+iced = { version = "0.13", default-features = false, features = [
+    "lazy",
+    "advanced",
+    "debug",
+] }
 serde = { version = "1", optional = true, features = ["derive"] }
