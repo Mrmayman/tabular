@@ -1,5 +1,5 @@
-use iced::Element;
 use iced::advanced::renderer;
+use iced::Element;
 
 pub mod tabular;
 pub use tabular::*;

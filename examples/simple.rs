@@ -1,21 +1,25 @@
+use iced::advanced::widget::operation::Focusable;
 use iced::keyboard::key;
 use iced::widget::{center, checkbox, column, container, row, slider, text, text_input};
-use iced::{Center, Element, Function, Task, keyboard};
+use iced::{Center, Element, Rectangle, Task, keyboard};
 
 use tabular::list::{Cell, Content};
 use tabular::reference::*;
 use tabular::{Address, Tabular, tabular};
 
 fn main() -> iced::Result {
-    iced::application(App::new, App::update, App::view)
-        .title("iced • how quickly can I make a grid/table widget")
-        .window(iced::window::Settings {
-            size: (800.0, 600.0).into(),
-            ..Default::default()
-        })
-        .theme(|_| iced::Theme::Light)
-        .centered()
-        .run()
+    iced::application(
+        "iced • how quickly can I make a grid/table widget",
+        App::update,
+        App::view,
+    )
+    .window(iced::window::Settings {
+        size: (800.0, 600.0).into(),
+        ..Default::default()
+    })
+    .theme(|_| iced::Theme::Light)
+    .centered()
+    .run_with(App::new)
 }
 
 #[derive(Debug, Clone)]
@@ -200,7 +204,7 @@ fn view_cell(address: Address, cell: &Cell) -> Element<'_, Message> {
 
     center(
         text_input("", &cell.content)
-            .on_input(Message::Edit.with(address))
+            .on_input(move |n| Message::Edit(address, n))
             .on_submit(Message::FocusTable)
             .size(12)
             .style(transparent)
@@ -236,10 +240,31 @@ fn transparent(theme: &iced::Theme, status: text_input::Status) -> text_input::S
     }
 }
 
-use iced::advanced::widget;
+use iced::advanced::widget::{self, Operation};
 pub fn unfocus<Message>() -> iced::Task<Message>
 where
     Message: Send + 'static,
 {
-    widget::operate(widget::operation::focusable::unfocus::<Message>())
+    widget::operate(unfocus_impl::<Message>())
+}
+
+pub fn unfocus_impl<T>() -> impl Operation<T> {
+    struct Unfocus {}
+
+    impl<T> Operation<T> for Unfocus {
+        fn focusable(&mut self, state: &mut dyn Focusable, _: Option<&widget::Id>) {
+            state.unfocus();
+        }
+
+        fn container(
+            &mut self,
+            _id: Option<&widget::Id>,
+            _bounds: Rectangle,
+            operate_on_children: &mut dyn FnMut(&mut dyn Operation<T>),
+        ) {
+            operate_on_children(self);
+        }
+    }
+
+    Unfocus {}
 }

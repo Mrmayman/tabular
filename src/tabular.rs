@@ -36,7 +36,7 @@
 use action::Edit;
 use iced::advanced::widget::{self, Tree, Widget, operation, tree};
 use iced::advanced::{Clipboard, Layout, Renderer, Shell, clipboard, layout, mouse, renderer};
-use iced::{Border, Color, Element, Length, Point, Rectangle, Size, Vector};
+use iced::{Border, Color, Element, Length, Point, Rectangle, Size, Vector, event};
 
 mod action;
 mod content;
@@ -475,17 +475,17 @@ where
         mouse::Interaction::default()
     }
 
-    fn update(
+    fn on_event(
         &mut self,
         tree: &mut Tree,
-        event: &iced::Event,
+        event: iced::Event,
         layout: Layout<'_>,
         raw_cursor: mouse::Cursor,
         renderer: &Renderer,
         clipboard: &mut dyn Clipboard,
         shell: &mut Shell<'_, Message>,
         viewport: &Rectangle,
-    ) {
+    ) -> iced::event::Status {
         let state = tree.state.downcast_mut::<State>();
         let mut _cells = layout.children();
 
@@ -497,12 +497,12 @@ where
                     {
                         state.interaction = Interaction::None;
                         state.unfocus();
-                        return;
+                        return event::Status::Ignored;
                     }
-                    Some(event)
+                    Some(event.clone())
                 }
-                iced::Event::Touch(_) | iced::Event::Keyboard(_) => Some(event),
-                iced::Event::Window(iced::window::Event::RedrawRequested(_)) => Some(event),
+                iced::Event::Touch(_) | iced::Event::Keyboard(_) => Some(event.clone()),
+                iced::Event::Window(iced::window::Event::RedrawRequested(_)) => Some(event.clone()),
                 _ => None,
             }
         } else {
@@ -514,7 +514,7 @@ where
             let on_edit = self.on_edit.as_ref().unwrap();
 
             if let Some(update) = Update::from_event::<K>(
-                filtered,
+                &filtered,
                 state,
                 layout.bounds(),
                 raw_cursor,
@@ -538,7 +538,8 @@ where
                             {
                                 state.interaction = Interaction::ResizeDivider(divider_hit);
                                 state.focus();
-                                return; // don't click through cells
+                                // ?
+                                return event::Status::Captured; // don't click through cells
                             } else {
                                 let cell_ref = K::from(state.region.find_cell(click.position()));
                                 if !self.data.selection().contains(&cell_ref) {
@@ -552,9 +553,9 @@ where
                                         .zip(tree.children.iter_mut())
                                         .zip(layout.children())
                                     {
-                                        child.1.as_widget_mut().update(
+                                        child.1.as_widget_mut().on_event(
                                             state,
-                                            event,
+                                            event.clone(),
                                             child_layout,
                                             raw_cursor,
                                             renderer,
@@ -565,7 +566,8 @@ where
                                     }
                                 }
 
-                                return; // early to avoid second child update()
+                                // ?
+                                return event::Status::Captured; // early to avoid second child update()
                             }
                         }
                         mouse::click::Kind::Double | mouse::click::Kind::Triple => {
@@ -582,9 +584,9 @@ where
                                 .zip(tree.children.iter_mut())
                                 .zip(layout.children())
                             {
-                                child.1.as_widget_mut().update(
+                                child.1.as_widget_mut().on_event(
                                     state,
-                                    event,
+                                    event.clone(),
                                     child_layout,
                                     raw_cursor,
                                     renderer,
@@ -593,8 +595,8 @@ where
                                     viewport,
                                 );
                             }
-                            shell.capture_event();
-                            return;
+                            // shell.capture_event();
+                            return event::Status::Captured;
                         }
                     },
                     Update::Release => match state.interaction {
@@ -620,8 +622,8 @@ where
 
                             shell.invalidate_layout();
                             shell.invalidate_widgets();
-                            shell.capture_event();
-                            return;
+                            // shell.capture_event();
+                            return event::Status::Captured;
                         }
                         Interaction::None => {
                             state.drag_click = None;
@@ -666,8 +668,8 @@ where
 
                                     shell.invalidate_layout();
                                     shell.invalidate_widgets();
-                                    shell.capture_event();
-                                    return;
+                                    // shell.capture_event();
+                                    return event::Status::Captured;
                                 }
                                 Interaction::None => {
                                     // Only create a new selection if we've actually dragged to a different position
@@ -686,8 +688,8 @@ where
                                                 shell.invalidate_layout();
                                             }
                                         }
-                                        shell.capture_event();
-                                        return;
+                                        // shell.capture_event();
+                                        return event::Status::Captured;
                                     }
                                 }
                             }
@@ -809,7 +811,8 @@ where
                         );
 
                         if terminate {
-                            return;
+                            // ?
+                            return event::Status::Ignored;
                         }
                     }
                 }
@@ -822,9 +825,9 @@ where
             .zip(tree.children.iter_mut())
             .zip(layout.children())
         {
-            child.1.as_widget_mut().update(
+            child.1.as_widget_mut().on_event(
                 state,
-                event,
+                event.clone(),
                 child_layout,
                 raw_cursor,
                 renderer,
@@ -833,6 +836,8 @@ where
                 viewport,
             );
         }
+
+        event::Status::Ignored
     }
 
     fn operate(
@@ -843,8 +848,8 @@ where
         operation: &mut dyn widget::Operation,
     ) {
         let state = tree.state.downcast_mut::<State>();
-        operation.focusable(self.id.as_ref(), layout.bounds(), state);
-        operation.custom(self.id.as_ref(), layout.bounds(), state);
+        operation.focusable(state, self.id.as_ref());
+        operation.custom(state, self.id.as_ref());
         operation.container(self.id.as_ref(), layout.bounds(), &mut |operation| {
             self.cells
                 .iter()

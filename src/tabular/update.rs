@@ -77,7 +77,7 @@ impl<Message: Clone> Update<Message> {
         let binding = |binding| Some(Update::Binding(binding));
 
         match &event {
-            iced::Event::InputMethod(_) | iced::Event::Window(_) => None,
+            iced::Event::Window(_) => None,
             iced::Event::Mouse(event) => match event {
                 mouse::Event::ButtonPressed(mouse::Button::Left) => {
                     if let Some(position) = cursor.position_in(bounds) {
